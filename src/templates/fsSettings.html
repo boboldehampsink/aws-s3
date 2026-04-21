@@ -22,6 +22,17 @@
     instructions: 'You can leave this field empty if you are using an EC2 instance with an applicable IAM role assignment.'|t('aws-s3')
 }) }}
 
+{{ forms.autosuggestField({
+    label: "STS Endpoint Override"|t('aws-s3'),
+    id: 'stsEndpoint',
+    name: 'stsEndpoint',
+    suggestEnvVars: true,
+    value: fs.stsEndpoint,
+    errors: fs.getErrors('stsEndpoint'),
+    class: 'ltr',
+    instructions: 'Optional. Override the STS endpoint used for temporary credential requests (for example, Wasabi STS).'|t('aws-s3')
+}) }}
+
 {% set bucketInput %}
     <div class="flex fullwidth">
         {{ forms.select({

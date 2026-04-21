@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added explicit STS control for S3-compatible providers: endpoint mode still defaults to direct credentials (for MinIO compatibility), and you can set `AWS_S3_USE_STS=true` for providers that support STS (for example, Wasabi).
+- Added explicit STS control for S3-compatible providers: endpoint mode still defaults to direct credentials (for MinIO compatibility), you can set `AWS_S3_USE_STS=true` for providers that support STS (for example, Wasabi), and each filesystem now has an **STS Endpoint Override** setting.
 
 ## 2.2.4 - 2026-01-14
 

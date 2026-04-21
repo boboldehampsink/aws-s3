@@ -123,3 +123,5 @@ If `AWS_ENDPOINT_URL_S3` is set, the plugin can be used with S3-compatible servi
 By default, when `AWS_ENDPOINT_URL_S3` is set, the plugin uses the configured Access Key ID and Secret Access Key directly (without requesting AWS STS `GetSessionToken`) for compatibility with services like MinIO.
 
 If your provider supports STS (for example, Wasabi), set `AWS_S3_USE_STS=true` to request temporary credentials via STS.
+
+If your filesystem should use a custom STS host, set the **STS Endpoint Override** filesystem setting (or map it to an env var) to override the STS endpoint per filesystem.
