@@ -95,6 +95,11 @@ class Fs extends FlysystemFs
     public string $bucketSelectionMode = 'choose';
 
     /**
+     * @var string Optional STS endpoint override used when requesting session tokens
+     */
+    public string $stsEndpoint = '';
+
+    /**
      * @var string Bucket to use
      */
     public string $bucket = '';
@@ -178,6 +183,7 @@ class Fs extends FlysystemFs
                 'secret',
                 'bucket',
                 'region',
+                'stsEndpoint',
                 'subfolder',
                 'cfDistributionId',
                 'cfPrefix',
@@ -316,6 +322,7 @@ class Fs extends FlysystemFs
                     $credentials['secret'],
                     $credentials['region'],
                     true,
+                    $credentials['stsEndpoint'] ?? null,
                 ];
                 return call_user_func_array(self::class . '::buildConfigArray', $args);
             };
@@ -443,10 +450,16 @@ class Fs extends FlysystemFs
      * @param ?string $secret The key secret
      * @param ?string $region The region to user
      * @param bool $refreshToken If true will always refresh token
+     * @param ?string $stsEndpoint Optional STS endpoint override
      * @return array
      */
-    public static function buildConfigArray(?string $keyId = null, ?string $secret = null, ?string $region = null, bool $refreshToken = false): array
-    {
+    public static function buildConfigArray(
+        ?string $keyId = null,
+        ?string $secret = null,
+        ?string $region = null,
+        bool $refreshToken = false,
+        ?string $stsEndpoint = null,
+    ): array {
         $config = [
             'region' => $region,
             'version' => 'latest',
@@ -479,14 +492,20 @@ class Fs extends FlysystemFs
             if (!static::shouldUseStsSessionToken()) {
                 $config['credentials'] = $credentials;
             } else {
-                $tokenKey = static::CACHE_KEY_PREFIX . md5($keyId . $secret);
+                $tokenKey = static::CACHE_KEY_PREFIX . md5($keyId . $secret . $stsEndpoint);
 
                 if (Craft::$app->cache->exists($tokenKey) && !$refreshToken) {
                     $cached = Craft::$app->cache->get($tokenKey);
                     $credentials->unserialize($cached);
                 } else {
-                    $config['credentials'] = $credentials;
-                    $stsClient = new StsClient($config);
+                    $stsConfig = $config;
+                    $stsConfig['credentials'] = $credentials;
+
+                    if (!empty($stsEndpoint)) {
+                        $stsConfig['endpoint'] = $stsEndpoint;
+                    }
+
+                    $stsClient = new StsClient($stsConfig);
                     $result = $stsClient->getSessionToken(['DurationSeconds' => static::CACHE_DURATION_SECONDS]);
                     $credentials = $stsClient->createCredentials($result);
                     $cacheDuration = $credentials->getExpiration() - time();
@@ -579,7 +598,13 @@ class Fs extends FlysystemFs
     {
         $credentials = $this->_getCredentials();
 
-        return self::buildConfigArray($credentials['keyId'], $credentials['secret'], $credentials['region']);
+        return self::buildConfigArray(
+            $credentials['keyId'],
+            $credentials['secret'],
+            $credentials['region'],
+            false,
+            $credentials['stsEndpoint'],
+        );
     }
 
     /**
@@ -593,6 +618,7 @@ class Fs extends FlysystemFs
             'keyId' => Craft::parseEnv($this->keyId),
             'secret' => Craft::parseEnv($this->secret),
             'region' => Craft::parseEnv($this->region),
+            'stsEndpoint' => Craft::parseEnv($this->stsEndpoint),
         ];
     }
 
